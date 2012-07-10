@@ -2,6 +2,7 @@ import os
 
 from cuisine import (file_exists, package_ensure)
 from fabric.api import cd, run, sudo
+from fabric.contrib.console import confirm
 from fabric.decorators import task
 from fabric.utils import puts
 
@@ -80,3 +81,17 @@ def uninstall_setuptools(py_version):
             sudo("{0} setup.py install --record setuptools_files.txt".format(python_bin))
             sudo("cat setuptools_files.txt | xargs rm -rf")
     sudo('rm -rf {0}'.format(src_dir))
+
+
+@task
+def uninstall_python(version):
+    """Uninstall python"""
+
+    install_dir = os.path.join(_INSTALL_DIR, 'python')
+    if version != 'all':
+        install_dir = os.path.join(install_dir, version)
+
+    puts("Removing {0}".format(install_dir))
+    if confirm("Are you sure?", default=False):
+        sudo("rm -rf '{0}'".format(install_dir))
+        puts("Python {0} uninstalled".format(version))
