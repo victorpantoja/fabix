@@ -40,6 +40,11 @@ def install_python(version, force=False):
     run('rm -rf {0}'.format(src_dir))
 
 
+def _python_bin_path(py_version, bin_name='python'):
+    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
+    return os.path.join(install_dir, 'bin', bin_name)
+
+
 @task
 def install_setuptools(py_version):
     """Install setuptools"""
@@ -47,8 +52,7 @@ def install_setuptools(py_version):
     major, minor = py_version.split('.')[0:2]
     version = "{0}.{1}".format(major, minor)
 
-    python_install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
-    python_bin = os.path.join(python_install_dir, 'bin', 'python')
+    python_bin = _python_bin_path(py_version)
 
     src_dir = run('mktemp -d')
     with cd(src_dir):
@@ -68,8 +72,7 @@ def uninstall_setuptools(py_version):
     major, minor = py_version.split('.')[0:2]
     version = "{0}.{1}".format(major, minor)
 
-    python_install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
-    python_bin = os.path.join(python_install_dir, 'bin', 'python')
+    python_bin = _python_bin_path(py_version)
 
     src_dir = run('mktemp -d')
     with cd(src_dir):
@@ -102,8 +105,8 @@ def install_pip(py_version):
     """Install pip latest version."""
 
     puts("Installing pip for python {0}".format(py_version))
-    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
-    easy_install_bin = os.path.join(install_dir, 'bin', 'easy_install')
+    easy_install_bin = _python_bin_path(py_version, 'easy_install')
+
     if not file_exists(easy_install_bin):
         puts("easy_install for version {0} not found".format(py_version))
         return
@@ -113,17 +116,11 @@ def install_pip(py_version):
 
 @task
 def uninstall_pip(py_version):
-    """Uninstall pip."""
+    """Uninstall pip
 
-    puts("Uninstalling pip for python {0}".format(py_version))
-    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
-    pip_bin = os.path.join(install_dir, 'bin', 'pip')
-
-    if not file_exists(pip_bin):
-        puts("pip for version {0} not found".format(py_version))
-        return
-
-    sudo('{0} uninstall pip'.format(pip_bin))
+    This task is just a alias to uninstall_pypi_package.
+    """
+    uninstall_pypi_package(py_version, 'pip')
 
 
 @task
@@ -131,8 +128,8 @@ def install_pypi_package(py_version, package):
     """Install pypi package `package` on python `py_version`."""
 
     puts("Installing pypi package {0} on python {1}".format(package, py_version))
-    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
-    pip_bin = os.path.join(install_dir, 'bin', 'pip')
+    pip_bin = _python_bin_path(py_version, 'pip')
+
     if not file_exists(pip_bin):
         puts("pip for version {0} not found".format(py_version))
         return
@@ -145,8 +142,7 @@ def uninstall_pypi_package(py_version, package):
     """Uninstall pypi package `package` on python `py_version`."""
 
     puts("Uninstalling pypi package {0} on python {1}".format(package, py_version))
-    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
-    pip_bin = os.path.join(install_dir, 'bin', 'pip')
+    pip_bin = _python_bin_path(py_version, 'pip')
 
     if not file_exists(pip_bin):
         puts("pip for version {0} not found".format(py_version))
