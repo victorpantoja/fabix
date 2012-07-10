@@ -20,12 +20,15 @@ Requirements
 Roadmap
 -------
 
+- Support framework installations (Django, Tornado, CherryPy, etc.)
 - Add support for RPM-based distros
 
 Contributing
 ------------
 
-Just do the usual thing: fork & send a pull request
+Just do the usual thing: fork & send a pull request. Please, respect the coding
+style around you and try to respect [PEP 8](http://www.python.org/dev/peps/pep-0008/)
+guidelines.
 
 License
 -------
