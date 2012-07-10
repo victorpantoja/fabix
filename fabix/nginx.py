@@ -6,7 +6,7 @@ from cuisine import (dir_ensure, file_exists, file_local_read, file_write,
 from fabric.api import cd, run, sudo
 from fabric.contrib.console import confirm
 from fabric.decorators import task
-from fabric.utils import puts
+from fabric.utils import abort, puts
 
 _INSTALL_DIR = '/opt'
 _DOWNLOAD_URL = 'http://nginx.org/download/nginx-{version}.tar.gz'
@@ -87,3 +87,27 @@ def install_nginx_upstart(version):
 
     with mode_sudo():
         file_write('/etc/init/nginx.conf', content)
+
+
+@task
+def install_nginx_conf(version, nginx_file):
+    """Install global nginx config."""
+
+    install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
+    conf_file = os.path.join(install_dir, 'conf', 'nginx.conf')
+
+    if not os.path.exists(nginx_file):
+        abort("Nginx conf {0} not found".format(nginx_file))
+
+    nginx_pid = os.path.join(install_dir, 'logs', 'nginx.pid')
+
+    context = {
+        'nginx_user': NGINX_USER,
+        'nginx_pid': nginx_pid,
+    }
+
+    tpl_content = open(nginx_file, 'rb').read()
+    content = text_template(tpl_content, context)
+
+    with mode_sudo():
+        file_write(conf_file, content)
