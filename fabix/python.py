@@ -9,6 +9,7 @@ from fabric.utils import puts
 _INSTALL_DIR = '/opt'
 PYTHON_DOWNLOAD_URL = 'http://www.python.org/ftp/python/{version}/Python-{version}.tgz'
 SETUPTOOLS_DOWNLOAD_URL = 'http://pypi.python.org/packages/source/s/setuptools/setuptools-0.6c11.tar.gz'
+SITES_DIR = '/data/sites/'
 
 
 @task
@@ -149,6 +150,32 @@ def uninstall_pypi_package(py_version, package):
         return
 
     sudo('{cmd} uninstall {package}'.format(cmd=pip_bin, package=package))
+
+
+@task
+def create_virtualenv(version, site):
+    """Cria a virtualenv para um site, :site"""
+    venv_bin = _python_bin_path(version, 'virtualenv')
+    sudo("{venv_bin} {sites_dir}/{site}/virtualenv".format(venv_bin=venv_bin,
+        sites_dir=SITES_DIR,
+        site=site))
+
+
+def _get_virtualenv_bin(site, binary):
+    """Grabs a binary in a given virtualenv"""
+    bin_dir = os.path.join(SITES_DIR, site, 'virtualenv', 'bin')
+    return os.path.join(bin_dir, binary)
+
+
+@task
+def install_requirements(site, upgrade=False):
+    """Install `site` project's requirements"""
+    pip = _get_virtualenv_bin(site, 'pip')
+    requirements = open("requirements.txt").read().replace("\n", " ")
+    sudo("{pip} install {upgrade} {requirements}".format(
+            pip=pip,
+            upgrade="--upgrade" if upgrade else "",
+            requirements=requirements))
 
 
 @task
