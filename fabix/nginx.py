@@ -1,8 +1,8 @@
 # coding: utf-8
 import os
 
-from cuisine import (dir_ensure, file_exists, file_local_read, file_write,
-    mode_sudo, package_ensure, text_template, user_ensure)
+from cuisine import (dir_ensure, file_exists, file_local_read, file_upload,
+    file_write, mode_sudo, package_ensure, text_template, user_ensure)
 from fabric.api import cd, run, sudo
 from fabric.contrib.console import confirm
 from fabric.decorators import task
@@ -111,3 +111,19 @@ def install_nginx_conf(version, nginx_file):
 
     with mode_sudo():
         file_write(conf_file, content)
+
+
+@task
+def install_nginx_site_conf(version, nginx_file):
+    """Install nginx config per site."""
+
+    if not os.path.exists(nginx_file):
+        abort("Nginx conf {0} not found".format(nginx_file))
+
+    site_name = os.path.basename(nginx_file)
+
+    install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
+    conf_file = os.path.join(install_dir, 'conf', 'sites-enabled', site_name)
+
+    with mode_sudo():
+        file_upload(conf_file, nginx_file)
