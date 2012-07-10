@@ -109,3 +109,18 @@ def install_pip(py_version):
         return
 
     sudo('{0} pip'.format(easy_install_bin))
+
+
+@task
+def uninstall_pip(py_version):
+    """Uninstall pip."""
+
+    puts("Uninstalling pip for python {0}".format(py_version))
+    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
+    pip_bin = os.path.join(install_dir, 'bin', 'pip')
+
+    if not file_exists(pip_bin):
+        puts("pip for version {0} not found".format(py_version))
+        return
+
+    sudo('{0} uninstall pip'.format(pip_bin))
