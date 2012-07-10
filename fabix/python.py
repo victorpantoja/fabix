@@ -95,3 +95,17 @@ def uninstall_python(version):
     if confirm("Are you sure?", default=False):
         sudo("rm -rf '{0}'".format(install_dir))
         puts("Python {0} uninstalled".format(version))
+
+
+@task
+def install_pip(py_version):
+    """Install pip latest version."""
+
+    puts("Installing pip for python {0}".format(py_version))
+    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
+    easy_install_bin = os.path.join(install_dir, 'bin', 'easy_install')
+    if not file_exists(easy_install_bin):
+        puts("easy_install for version {0} not found".format(py_version))
+        return
+
+    sudo('{0} pip'.format(easy_install_bin))
