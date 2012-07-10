@@ -149,3 +149,12 @@ def uninstall_pypi_package(py_version, package):
         return
 
     sudo('{cmd} uninstall {package}'.format(cmd=pip_bin, package=package))
+
+
+@task
+def setup_python(version):
+    """Install python, setuptools, pip and virtualenv."""
+    install_python(version)
+    install_setuptools(version)
+    install_pip(version)
+    install_pypi_package(version, 'virtualenv')
