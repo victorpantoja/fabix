@@ -127,3 +127,12 @@ def install_nginx_site_conf(version, nginx_file):
 
     with mode_sudo():
         file_upload(conf_file, nginx_file)
+
+
+@task
+def setup_nginx(version, nginx_file, nginx_site_conf):
+    """Installs and configures nginx"""
+    install_nginx(version)
+    install_nginx_upstart(version)
+    install_nginx_conf(version, nginx_file)
+    install_nginx_site_conf(version, nginx_site_conf)
