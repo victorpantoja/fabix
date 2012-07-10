@@ -138,3 +138,18 @@ def install_pypi_package(py_version, package):
         return
 
     sudo('{cmd} install {package}'.format(cmd=pip_bin, package=package))
+
+
+@task
+def uninstall_pypi_package(py_version, package):
+    """Uninstall pypi package `package` on python `py_version`."""
+
+    puts("Uninstalling pypi package {0} on python {1}".format(package, py_version))
+    install_dir = os.path.join(_INSTALL_DIR, 'python', py_version)
+    pip_bin = os.path.join(install_dir, 'bin', 'pip')
+
+    if not file_exists(pip_bin):
+        puts("pip for version {0} not found".format(py_version))
+        return
+
+    sudo('{cmd} uninstall {package}'.format(cmd=pip_bin, package=package))
