@@ -140,6 +140,9 @@ def replace_launch_config(name, image_id=None, key_name=None,
         instance_monitoring = orig_launch_config.instance_monitoring
 
     config_name = "{0}_{1}".format(name, datetime.now().strftime("%Y%m%d%H%M"))
+
+    puts("Replace launch config {0} with {1}".format(orig_launch_config_name, config_name))
+
     new_launch_config = LaunchConfiguration(name=config_name, image_id=image_id,
                                             key_name=key_name,
                                             security_groups=security_groups,
@@ -151,4 +154,11 @@ def replace_launch_config(name, image_id=None, key_name=None,
     as_group.update()
 
     conn.delete_launch_configuration(orig_launch_config_name)
-    return config_name
+    return orig_launch_config_name, config_name
+
+
+@task
+def update_autoscale(instance_id, name):
+    """Create AMI image from `instance_id` and update autoscale configuration"""
+    image_id = create_ami(instance_id, name)
+    replace_launch_config(image_id, name)
