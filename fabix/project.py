@@ -1,7 +1,9 @@
 import os
 from datetime import datetime
+from tempfile import mkdtemp
 
-from fabric.api import cd
+from cuisine import dir_ensure, mode_sudo
+from fabric.context_managers import cd, lcd
 from fabric.decorators import task
 from fabric.operations import local, put, run, sudo
 from fabric.utils import puts
@@ -24,25 +26,33 @@ def create_project_structure(site_name):
 
 
 @task
-def upload(site):
-    """Upload project `site` files."""
+def upload(site, tag='master'):
+    """Upload project `site` files from tag or branch `master`."""
+    puts("Upload project {0}".format(site))
 
-    puts("Upload project %s" % site)
-
-    # Generate package file
     today = datetime.now().strftime('%Y%m%d-%H%M%S')
-    commit_id = str(local('git rev-parse HEAD', True)).strip()
+    commit_id = str(local('git rev-parse {0}'.format(tag), True)).strip()
     current = "%s-%s" % (today, commit_id[:8])
 
-    local("rm -f /tmp/{0}.tgz".format(site))
-    git_arch_cmd = r"""git archive --format=tar --prefix={commit_id}/ {commit_id} | gzip > /tmp/{site}.tgz"""
-    local(git_arch_cmd.format(site=site, commit_id=commit_id))
+    with mode_sudo():
+        dir_ensure(os.path.join(INSTALL_DIR, site, 'releases', current))
 
-    put("/tmp/{0}.tgz".format(site), "/tmp/")
-    run("tar -C /tmp -zxf /tmp/{0}.tgz".format(site))
-    sudo("mv /tmp/{commit_id} {prefix}/{site}/releases/{current}".format(site=site, current=current, commit_id=commit_id, prefix=INSTALL_DIR))
+    local_temp_dir = mkdtemp()
+    archive = os.path.join(local_temp_dir, '{0}.tar.gz'.format(site))
 
-    puts("Activating site %s" % site)
+    git_arch_cmd = "git archive --format=tar.gz -o {archive} --prefix={commit_id}/ {commit_id}"
+    local(git_arch_cmd.format(archive=archive, commit_id=commit_id))
+
+    with lcd(local_temp_dir):
+        remote_temp_dir = run('mktemp -d')
+        put(archive, remote_temp_dir)
+        with cd(remote_temp_dir):
+            run("tar xzf {0}.tar.gz".format(site))
+            sudo("mv {commit_id} {prefix}/{site}/releases/{current}".format(site=site, current=current, commit_id=commit_id, prefix=INSTALL_DIR))
+        run('rm -rf {0}'.format(remote_temp_dir))
+    local('rm -rf {0}'.format(local_temp_dir))
+
+    puts("Activating project {0}".format(site))
     with cd(os.path.join(INSTALL_DIR, site)):
         sudo("ln -nsf releases/{current} {site}".format(site=site, current=current))
 
@@ -51,11 +61,11 @@ def upload(site):
 
 @task
 def cleanup_old_releases(site, keep=5):
-    """Cleanup old releases for `site` keeping (per default) the 5 most recent."""
+    """Cleanup old releases for `site` keeping the `keep` most recent."""
 
     with cd(os.path.join(INSTALL_DIR, site, 'releases')):
         files_to_remove = str(run('ls -1')).split()
         if files_to_remove:
             cmd_args = ' '.join(files_to_remove[:-keep])
-            puts("Removeing releases {0}".format(cmd_args))
+            puts("Removing releases {0}".format(cmd_args))
             sudo('rm -rf {0}'.format(cmd_args))
