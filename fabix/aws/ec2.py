@@ -81,7 +81,6 @@ def setup_autoscale(name, ami_id, key_name, security_groups, load_balancers,
     sp_down_name = '{0}-scaling-down'.format(name)
 
     conn_as = boto.connect_autoscale()
-    import pdb; pdb.set_trace()
     lc = LaunchConfiguration(name=launch_config, image_id=ami_id,
                              key_name=key_name,
                              security_groups=security_groups,
@@ -115,3 +114,41 @@ def get_autoscaling_instances(elb_name):
     for reservation in reservations:
         ec2_instances.append(reservation.instances[0].public_dns_name)
     return ec2_instances
+
+
+@task
+def replace_launch_config(name, image_id=None, key_name=None,
+        security_groups=None, instance_type=None, instance_monitoring=None):
+    """Replace launch configuration associated with auto scaling group."""
+
+    conn = boto.connect_autoscale()
+    as_group = conn.get_all_groups(['{0}-as-group'.format(name)], max_records=1)[0]
+    orig_launch_config_name = as_group.launch_config_name
+
+    orig_launch_config = conn.get_all_launch_configurations(names=[orig_launch_config_name],
+                                                            max_records=1)[0]
+
+    if not image_id:
+        image_id = orig_launch_config.image_id
+    if not key_name:
+        key_name = orig_launch_config.key_name
+    if not security_groups:
+        security_groups = orig_launch_config.security_groups
+    if not instance_type:
+        instance_type = orig_launch_config.instance_type
+    if not instance_monitoring:
+        instance_monitoring = orig_launch_config.instance_monitoring
+
+    config_name = "{0}_{1}".format(name, datetime.now().strftime("%Y%m%d%H%M"))
+    new_launch_config = LaunchConfiguration(name=config_name, image_id=image_id,
+                                            key_name=key_name,
+                                            security_groups=security_groups,
+                                            instance_type=instance_type,
+                                            instance_monitoring=instance_monitoring)
+    conn.create_launch_configuration(new_launch_config)
+
+    as_group.launch_config_name = config_name
+    as_group.update()
+
+    conn.delete_launch_configuration(orig_launch_config_name)
+    return config_name
