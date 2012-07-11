@@ -46,5 +46,16 @@ def upload(site):
     with cd(os.path.join(INSTALL_DIR, site)):
         sudo("ln -nsf releases/{current} {site}".format(site=site, current=current))
 
-    #_cleanup_old_releases(site)
+    cleanup_old_releases(site)
 
+
+@task
+def cleanup_old_releases(site, keep=5):
+    """Cleanup old releases for `site` keeping (per default) the 5 most recent."""
+
+    with cd(os.path.join(INSTALL_DIR, site, 'releases')):
+        files_to_remove = str(run('ls -1')).split()
+        if files_to_remove:
+            cmd_args = ' '.join(files_to_remove[:-keep])
+            puts("Removeing releases {0}".format(cmd_args))
+            sudo('rm -rf {0}'.format(cmd_args))
