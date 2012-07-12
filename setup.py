@@ -21,5 +21,6 @@ setup(
                 ],
     packages=find_packages(),
     package_dir={"fabix": "fabix"},
+    install_requires = open("requirements.txt").read().split("\n"),
     include_package_data=True,
 )
