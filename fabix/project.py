@@ -33,14 +33,15 @@ def upload(site, tag='master'):
     today = datetime.now().strftime('%Y%m%d-%H%M%S')
     commit_id = str(local('git rev-parse {0}'.format(tag), True)).strip()
     current = "%s-%s" % (today, commit_id[:8])
+    release_dir = os.path.join(INSTALL_DIR, site, 'releases')
 
     with mode_sudo():
-        dir_ensure(os.path.join(INSTALL_DIR, site, 'releases', current))
+        dir_ensure(release_dir)
 
     local_temp_dir = mkdtemp()
     archive = os.path.join(local_temp_dir, '{0}.tar.gz'.format(site))
 
-    git_arch_cmd = "git archive --format=tar.gz -o {archive} --prefix={commit_id}/ {commit_id}"
+    git_arch_cmd = "git archive --format=tar.gz -o {archive} {commit_id}"
     local(git_arch_cmd.format(archive=archive, commit_id=commit_id))
 
     with lcd(local_temp_dir):
@@ -48,7 +49,8 @@ def upload(site, tag='master'):
         put(archive, remote_temp_dir)
         with cd(remote_temp_dir):
             run("tar xzf {0}.tar.gz".format(site))
-            sudo("mv {commit_id} {prefix}/{site}/releases/{current}".format(site=site, current=current, commit_id=commit_id, prefix=INSTALL_DIR))
+            run("rm -f {0}.tar.gz".format(site))
+        sudo("mv {tmp_dir} {release_dir}/{current}".format(release_dir=release_dir, current=current, tmp_dir=remote_temp_dir))
         run('rm -rf {0}'.format(remote_temp_dir))
     local('rm -rf {0}'.format(local_temp_dir))
 
