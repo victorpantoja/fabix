@@ -52,11 +52,15 @@ def upload(site, tag='master'):
         run('rm -rf {0}'.format(remote_temp_dir))
     local('rm -rf {0}'.format(local_temp_dir))
 
-    puts("Activating project {0}".format(site))
-    with cd(os.path.join(INSTALL_DIR, site)):
-        sudo("ln -nsf releases/{current} {site}".format(site=site, current=current))
+    return current
 
-    cleanup_old_releases(site)
+
+@task
+def activate(project, release):
+    """Activate release `release` code for project `project`."""
+    puts("Activating project {0} release {1}".format(project, release))
+    with cd(os.path.join(INSTALL_DIR, project)):
+        sudo("ln -nsf releases/{release} {project}".format(project=project, release=release))
 
 
 @task
