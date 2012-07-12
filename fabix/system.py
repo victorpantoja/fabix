@@ -1,17 +1,28 @@
 import os
 
-from cuisine import upstart_ensure
+from fabric.context_managers import settings
 from fabric.decorators import task
 from fabric.operations import put, sudo
 from fabric.utils import puts
 
 
 @task
-def restart_service(service, force_start=True):
+def restart_service(service, force_start=True, **kwargs):
+
+    extra = ''
+    for key, value in kwargs.iteritems():
+        extra = "{0} {1}={2}".format(extra, key.upper(), value)
+
     if force_start:
-        upstart_ensure(service)
+        with settings(warn_only=True):
+            status = sudo("service {0} status {1}".format(service, extra))
+        if status.failed:
+            cmd = 'start'
+        else:
+            cmd = 'restart'
     else:
-        sudo('service {0} restart'.format(service))
+        cmd = 'restart'
+    sudo('service {0} {1} {2}'.format(service, cmd, extra))
 
 
 @task
