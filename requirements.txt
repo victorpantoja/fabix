@@ -2,4 +2,3 @@ Fabric==1.4.2
 cuisine==0.2.9
 pycrypto==2.6
 ssh==1.7.14
-wsgiref==0.1.2
