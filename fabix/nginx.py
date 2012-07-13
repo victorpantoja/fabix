@@ -114,7 +114,7 @@ def install_nginx_conf(version, nginx_file):
 
 
 @task
-def install_nginx_site_conf(version, nginx_file):
+def install_nginx_site_conf(version, nginx_file, context=None):
     """Install nginx config per site."""
 
     if not os.path.exists(nginx_file):
@@ -125,8 +125,15 @@ def install_nginx_site_conf(version, nginx_file):
     install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
     conf_file = os.path.join(install_dir, 'conf', 'sites-enabled', site_name)
 
-    with mode_sudo():
-        file_upload(conf_file, nginx_file)
+    if context:
+        tpl_content = open(nginx_file, 'rb').read()
+        content = text_template(tpl_content, context)
+
+        with mode_sudo():
+            file_write(conf_file, content)
+    else:
+        with mode_sudo():
+            file_upload(conf_file, nginx_file)
 
 
 @task
