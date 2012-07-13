@@ -50,6 +50,8 @@ def upload(site, tag='master'):
         with cd(remote_temp_dir):
             run("tar xzf {0}.tar.gz".format(site))
             run("rm -f {0}.tar.gz".format(site))
+        sudo('chown -R root.root {0}'.format(remote_temp_dir))
+        sudo('chmod -R 755 {0}'.format(remote_temp_dir))
         sudo("mv {tmp_dir} {release_dir}/{current}".format(release_dir=release_dir, current=current, tmp_dir=remote_temp_dir))
         run('rm -rf {0}'.format(remote_temp_dir))
     local('rm -rf {0}'.format(local_temp_dir))
