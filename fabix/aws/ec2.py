@@ -150,10 +150,17 @@ def replace_launch_config(name, image_id=None, key_name=None,
                                             instance_monitoring=instance_monitoring)
     conn.create_launch_configuration(new_launch_config)
 
+    min_size = int(as_group.min_size)
+    max_size = int(as_group.max_size)
+
     as_group.launch_config_name = config_name
+    import pdb; pdb.set_trace()
+    # We need to setup min & max size again
+    as_group.min_size = min_size
+    as_group.max_size = max_size
     as_group.update()
 
-    conn.delete_launch_configuration(orig_launch_config_name)
+    orig_launch_config.delete()
     return orig_launch_config_name, config_name
 
 
