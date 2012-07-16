@@ -25,17 +25,17 @@ def create_ami(instance_id, name):
     puts("Creating AMI {0} for instance {1}".format(image_name, image_id))
 
     while True:
-        puts('.', end='', sep='')
+        puts('.', end='')
         sys.stdout.flush()
 
         image = conn.get_image(image_id)
         if image.state == 'available':
             break
         if image.state == "failed":
-            abort("Error creating AMI for {1}".format(image_id))
+            abort("Error creating AMI for {0}".format(image_id))
         time.sleep(5.0)
 
-    puts("Image {0} created".format(image_name))
+    puts("\nImage {0} created".format(image_name))
     return image_id
 
 
@@ -161,4 +161,4 @@ def replace_launch_config(name, image_id=None, key_name=None,
 def update_autoscale(instance_id, name):
     """Create AMI image from `instance_id` and update autoscale configuration"""
     image_id = create_ami(instance_id, name)
-    replace_launch_config(image_id, name)
+    replace_launch_config(name, image_id)
