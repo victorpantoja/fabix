@@ -14,8 +14,8 @@ welcome :).
 Requirements
 ------------
 
- * [Fabric](http://docs.fabfile.org/en/1.4.2/index.html) 1.4.2
- * [cuisine](https://github.com/sebastien/cuisine) 0.2.6
+ * Fabric_ 1.4.2
+ * cuisine_ 0.2.6
 
 Roadmap
 -------
@@ -27,10 +27,14 @@ Contributing
 ------------
 
 Just do the usual thing: fork & send a pull request. Please, respect the coding
-style around you and try to respect [PEP 8](http://www.python.org/dev/peps/pep-0008/)
-guidelines.
+style around you and try to respect _`PEP 8` guidelines.
 
 License
 -------
 
-This project is licensed under MIT license. For details, please see file MIT-LICENSE
+This project is licensed under MIT license. For details, please see file MIT-LICENSE.
+
+
+.. _Fabric: http://docs.fabfile.org/en/1.4.2/index.html
+.. _cuisine: https://github.com/sebastien/cuisine
+.. _`PEP 8`: http://www.python.org/dev/peps/pep-0008/

@@ -5,7 +5,7 @@ setup(
     name='fabix',
     version=__version__,
     description="Fabix is a serie of functions built on top of fabric and cuisine to easily deploy python web projects.",
-    long_description=open('README.md', 'rb').read(),
+    long_description=open('README.rst', 'rb').read(),
     keywords=['fabric', 'cuisine', 'fabix'],
     author='Rodrigo Machado',
     author_email='rcmachado@gmail.com',
