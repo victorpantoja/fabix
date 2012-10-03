@@ -9,6 +9,7 @@ from fabric.decorators import task
 from fabric.operations import local, put, run, sudo
 from fabric.utils import puts
 
+from fabix import get_config
 
 INSTALL_DIR = '/data/sites'
 
@@ -47,6 +48,7 @@ def create_structure():
 def upload(tag='master'):
     """Upload project `site` files from tag or branch `master`."""
     site = fabric.api.env.fabix['_current_project']
+    project_dir = get_config()['project_dir']
 
     puts("Upload project {0}".format(site))
 
@@ -61,8 +63,8 @@ def upload(tag='master'):
     local_temp_dir = mkdtemp()
     archive = os.path.join(local_temp_dir, '{0}.tar.gz'.format(site))
 
-    git_arch_cmd = "git archive --format=tar.gz -o {archive} {commit_id}"
-    local(git_arch_cmd.format(archive=archive, commit_id=commit_id))
+    git_arch_cmd = "git archive --format=tar.gz -o {archive} {commit_id}:{project_dir}"
+    local(git_arch_cmd.format(archive=archive, commit_id=commit_id, project_dir=project_dir))
 
     with lcd(local_temp_dir):
         remote_temp_dir = run('mktemp -d')
