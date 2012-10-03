@@ -1,10 +1,14 @@
 import os
+from functools import partial
 
-from cuisine import (file_exists, package_ensure)
+from cuisine import file_exists, package_install
+import fabric
 from fabric.api import cd, run, sudo
 from fabric.contrib.console import confirm
 from fabric.decorators import task
 from fabric.utils import puts
+
+from fabix import get_config
 
 _INSTALL_DIR = '/opt'
 PYTHON_DOWNLOAD_URL = 'http://www.python.org/ftp/python/{version}/Python-{version}.tgz'
@@ -12,12 +16,15 @@ SETUPTOOLS_DOWNLOAD_URL = 'http://pypi.python.org/packages/source/s/setuptools/s
 SITES_DIR = '/data/sites/'
 
 
-@task
-def install_python(version, force=False):
-    """Install python"""
+get_config = partial(get_config, 'python')
 
-    package_ensure('build-essential')
-    package_ensure('libcurl4-openssl-dev')
+
+@task
+def install(force=False):
+    """Install python"""
+    version = get_config()['version']
+
+    package_install(['build-essential', 'libcurl4-openssl-dev'])
 
     install_dir = os.path.join(_INSTALL_DIR, 'python', version)
     python_bin = os.path.join(install_dir, 'bin', 'python')
@@ -47,8 +54,9 @@ def _python_bin_path(py_version, bin_name='python'):
 
 
 @task
-def install_setuptools(py_version):
+def install_setuptools():
     """Install setuptools"""
+    py_version = get_config()['version']
 
     major, minor = py_version.split('.')[0:2]
     version = "{0}.{1}".format(major, minor)
@@ -67,8 +75,9 @@ def install_setuptools(py_version):
 
 
 @task
-def uninstall_setuptools(py_version):
+def uninstall_setuptools():
     """Uninstall setuptools"""
+    py_version = get_config()['version']
 
     major, minor = py_version.split('.')[0:2]
     version = "{0}.{1}".format(major, minor)
@@ -88,8 +97,9 @@ def uninstall_setuptools(py_version):
 
 
 @task
-def uninstall_python(version):
+def uninstall():
     """Uninstall python"""
+    version = get_config()['version']
 
     install_dir = os.path.join(_INSTALL_DIR, 'python')
     if version != 'all':
@@ -102,8 +112,9 @@ def uninstall_python(version):
 
 
 @task
-def install_pip(py_version):
+def install_pip():
     """Install pip latest version."""
+    py_version = get_config()['version']
 
     puts("Installing pip for python {0}".format(py_version))
     easy_install_bin = _python_bin_path(py_version, 'easy_install')
@@ -116,17 +127,19 @@ def install_pip(py_version):
 
 
 @task
-def uninstall_pip(py_version):
+def uninstall_pip():
     """Uninstall pip
 
     This task is just a alias to uninstall_pypi_package.
     """
+    py_version = get_config()['version']
     uninstall_pypi_package(py_version, 'pip')
 
 
 @task
-def install_pypi_package(py_version, package):
+def install_pypi_package(package):
     """Install pypi package `package` on python `py_version`."""
+    py_version = get_config()['version']
 
     puts("Installing pypi package {0} on python {1}".format(package, py_version))
     pip_bin = _python_bin_path(py_version, 'pip')
@@ -139,8 +152,9 @@ def install_pypi_package(py_version, package):
 
 
 @task
-def uninstall_pypi_package(py_version, package):
+def uninstall_pypi_package(package):
     """Uninstall pypi package `package` on python `py_version`."""
+    py_version = get_config()['version']
 
     puts("Uninstalling pypi package {0} on python {1}".format(package, py_version))
     pip_bin = _python_bin_path(py_version, 'pip')
@@ -153,8 +167,11 @@ def uninstall_pypi_package(py_version, package):
 
 
 @task
-def create_virtualenv(version, site):
+def create_virtualenv():
     """Cria a virtualenv para um site, :site"""
+    site = fabric.api.env.fabix['_current_project']
+    version = get_config()['version']
+
     venv_bin = _python_bin_path(version, 'virtualenv')
     sudo("{venv_bin} {sites_dir}/{site}/virtualenv".format(venv_bin=venv_bin,
         sites_dir=SITES_DIR,
@@ -168,8 +185,10 @@ def _get_virtualenv_bin(site, binary):
 
 
 @task
-def install_requirements(site, upgrade=False):
+def install_requirements(upgrade=False):
     """Install `site` project's requirements"""
+    site = fabric.api.env.fabix['_current_project']
+
     pip = _get_virtualenv_bin(site, 'pip')
     requirements = open("requirements.txt").read().replace("\n", " ")
     sudo("{pip} install {upgrade} {requirements}".format(
@@ -179,9 +198,9 @@ def install_requirements(site, upgrade=False):
 
 
 @task
-def setup_python(version):
+def setup():
     """Install python, setuptools, pip and virtualenv."""
-    install_python(version)
-    install_setuptools(version)
-    install_pip(version)
-    install_pypi_package(version, 'virtualenv')
+    install()
+    install_setuptools()
+    install_pip()
+    install_pypi_package('virtualenv')

@@ -1,12 +1,15 @@
 # coding: utf-8
 import os
+from functools import partial
 
 from cuisine import (dir_ensure, file_exists, file_local_read, file_upload,
-    file_write, mode_sudo, package_ensure, text_template, user_ensure)
-from fabric.api import cd, run, sudo
+    file_write, mode_sudo, text_template, user_ensure, package_install)
+from fabric.api import cd, run, sudo, env
 from fabric.contrib.console import confirm
 from fabric.decorators import task
 from fabric.utils import abort, puts
+
+from fabix import get_config
 
 _INSTALL_DIR = '/opt'
 _DOWNLOAD_URL = 'http://nginx.org/download/nginx-{version}.tar.gz'
@@ -14,13 +17,15 @@ NGINX_USER = 'nginx'
 ETC_DIR = os.path.join(os.path.dirname(__file__), 'support_files', 'etc')
 
 
-@task
-def install_nginx(version, force=False):
-    """Install nginx HTTP server."""
+get_config = partial(get_config, 'nginx')
 
-    package_ensure('libpcre3-dev')
-    package_ensure('zlib1g-dev')
-    package_ensure('build-essential')
+
+@task
+def install(force=False):
+    """Install nginx HTTP server."""
+    version = get_config()['version']
+
+    package_install(['build-essential', 'libpcre3-dev', 'zlib1g-dev'])
 
     install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
     nginx_bin = os.path.join(install_dir, 'sbin', 'nginx')
@@ -50,13 +55,15 @@ def install_nginx(version, force=False):
             run("make")
             puts("Installing nginx {0}".format(version))
             sudo('make install')
-            sudo('mkdir {0}'.format(os.path.join(install_dir, 'conf', 'sites-enabled')))
+            with mode_sudo():
+                dir_ensure("{0}{1}".format(install_dir, '/conf/sites-enabled'))
     run("rm -rf '{0}'".format(src_dir))
 
 
 @task
-def uninstall_nginx(version):
+def uninstall():
     """Uninstall nginx HTTP server"""
+    version = get_config()['version']
 
     install_dir = os.path.join(_INSTALL_DIR, 'nginx')
     if version != 'all':
@@ -69,8 +76,9 @@ def uninstall_nginx(version):
 
 
 @task
-def install_nginx_upstart(version):
+def install_upstart():
     """Install nginx upstart config."""
+    version = get_config()['version']
 
     install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
     nginx_bin = os.path.join(install_dir, 'sbin', 'nginx')
@@ -90,8 +98,9 @@ def install_nginx_upstart(version):
 
 
 @task
-def install_nginx_conf(version, nginx_file):
+def put_conf(nginx_file):
     """Install global nginx config."""
+    version = get_config()['version']
 
     install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
     conf_file = os.path.join(install_dir, 'conf', 'nginx.conf')
@@ -114,8 +123,9 @@ def install_nginx_conf(version, nginx_file):
 
 
 @task
-def install_nginx_site_conf(version, nginx_file, context=None):
+def put_site_conf(nginx_file, context=None):
     """Install nginx config per site."""
+    version = get_config()['version']
 
     if not os.path.exists(nginx_file):
         abort("Nginx conf {0} not found".format(nginx_file))
@@ -137,9 +147,9 @@ def install_nginx_site_conf(version, nginx_file, context=None):
 
 
 @task
-def setup_nginx(version, nginx_file, nginx_site_conf):
+def setup(nginx_file, nginx_site_conf):
     """Installs and configures nginx"""
-    install_nginx(version)
-    install_nginx_upstart(version)
-    install_nginx_conf(version, nginx_file)
-    install_nginx_site_conf(version, nginx_site_conf)
+    install()
+    install_upstart()
+    put_conf(nginx_file)
+    put_site_conf(nginx_site_conf)

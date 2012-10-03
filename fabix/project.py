@@ -3,17 +3,35 @@ from datetime import datetime
 from tempfile import mkdtemp
 
 from cuisine import dir_ensure, mode_sudo
+import fabric
 from fabric.context_managers import cd, lcd
 from fabric.decorators import task
 from fabric.operations import local, put, run, sudo
 from fabric.utils import puts
 
+
 INSTALL_DIR = '/data/sites'
 
 
+class env(object):
+    def __init__(self, project_name):
+        self._old_env_name = None
+        self._current_env_name = project_name
+        if 'fabix' in fabric.api.env:
+            self._old_env_name = fabric.api.env.get('fabix', dict()).get('_current_project', None)
+
+    def __enter__(self):
+        fabric.api.env.fabix['_current_project'] = self._current_env_name
+
+    def __exit__(self, type, value, traceback):
+        if self._old_env_name is not None:
+            fabric.api.env.fabix['_current_project'] = self._old_env_name
+
+
 @task
-def create_project_structure(site_name):
+def create_structure():
     """Create directory structure for project `site_name`."""
+    site_name = fabric.api.env.fabix['_current_project']
 
     install_dir = os.path.join(INSTALL_DIR, site_name)
     dirs_to_create = (
@@ -26,8 +44,10 @@ def create_project_structure(site_name):
 
 
 @task
-def upload(site, tag='master'):
+def upload(tag='master'):
     """Upload project `site` files from tag or branch `master`."""
+    site = fabric.api.env.fabix['_current_project']
+
     puts("Upload project {0}".format(site))
 
     today = datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -60,16 +80,19 @@ def upload(site, tag='master'):
 
 
 @task
-def activate(project, release):
+def activate(release):
     """Activate release `release` code for project `project`."""
+    project = fabric.api.env.fabix['_current_project']
+
     puts("Activating project {0} release {1}".format(project, release))
     with cd(os.path.join(INSTALL_DIR, project)):
         sudo("ln -nsf releases/{release} {project}".format(project=project, release=release))
 
 
 @task
-def cleanup_old_releases(site, keep=5):
+def cleanup(keep=5):
     """Cleanup old releases for `site` keeping the `keep` most recent."""
+    site = fabric.api.env.fabix['_current_project']
 
     with cd(os.path.join(INSTALL_DIR, site, 'releases')):
         files_to_remove = str(run('ls -1')).split()
