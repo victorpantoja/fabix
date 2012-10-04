@@ -2,12 +2,7 @@ import os
 from functools import partial
 
 import cuisine
-from cuisine import file_exists, package_install
-import fabric
-from fabric.api import cd, run, sudo
-from fabric.contrib.console import confirm
-from fabric.decorators import task
-from fabric.utils import puts
+import fabric.api as fab
 
 from fabix import get_config, get_project_name
 
@@ -21,7 +16,7 @@ get_proj_config = get_config
 get_config = partial(get_config, 'python')
 
 
-@task
+@fab.task
 def install(force=False):
     """Install python"""
     version = get_config()['version']
@@ -29,25 +24,25 @@ def install(force=False):
     install_dir = os.path.join(_INSTALL_DIR, 'python', version)
     python_bin = os.path.join(install_dir, 'bin', 'python')
 
-    if file_exists(python_bin):
+    if cuisine.file_exists(python_bin):
         if not force:
-            puts("Python {0} found, skipping installation".format(version))
+            fab.puts("Python {0} found, skipping installation".format(version))
             return
         else:
-            puts("Reinstalling Python {0} found".format(version))
+            fab.puts("Reinstalling Python {0} found".format(version))
 
-    package_install(['build-essential', 'libcurl4-openssl-dev'])
+    fab.package_install(['build-essential', 'libcurl4-openssl-dev'])
 
-    src_dir = run('mktemp -d')
-    with cd(src_dir):
-        puts("Downloading python {0}".format(version))
-        run("wget -q '%s' -O - | tar xz" % PYTHON_DOWNLOAD_URL.format(version=version))
-        with cd('Python-{0}'.format(version)):
-            puts("Installing python {0}".format(version))
-            run("./configure --prefix=%s" % install_dir)
-            run("make")
-            sudo('make install')
-    run('rm -rf {0}'.format(src_dir))
+    src_dir = fab.run('mktemp -d')
+    with fab.cd(src_dir):
+        fab.puts("Downloading python {0}".format(version))
+        fab.run("wget -q '%s' -O - | tar xz" % PYTHON_DOWNLOAD_URL.format(version=version))
+        with fab.cd('Python-{0}'.format(version)):
+            fab.puts("Installing python {0}".format(version))
+            fab.run("./configure --prefix=%s" % install_dir)
+            fab.run("make")
+            fab.sudo('make install')
+    fab.run('rm -rf {0}'.format(src_dir))
 
 
 def _python_bin_path(py_version, bin_name='python'):
@@ -55,7 +50,7 @@ def _python_bin_path(py_version, bin_name='python'):
     return os.path.join(install_dir, 'bin', bin_name)
 
 
-@task
+@fab.task
 def install_setuptools(force=False):
     """Install setuptools"""
     py_version = get_config()['version']
@@ -63,28 +58,28 @@ def install_setuptools(force=False):
     easy_install_bin = _python_bin_path(py_version, 'easy_install')
     if cuisine.file_exists(easy_install_bin):
         if not force:
-            puts("easy_install for python {0} found, skipping installation".format(py_version))
+            fab.puts("easy_install for python {0} found, skipping installation".format(py_version))
             return
         else:
-            puts("Reinstalling easy_install for python {0}".format(py_version))
+            fab.puts("Reinstalling easy_install for python {0}".format(py_version))
 
     major, minor = py_version.split('.')[0:2]
     version = "{0}.{1}".format(major, minor)
 
     python_bin = _python_bin_path(py_version)
 
-    src_dir = run('mktemp -d')
-    with cd(src_dir):
-        puts("Downloading setuptools for python {0}".format(version))
+    src_dir = fab.run('mktemp -d')
+    with fab.cd(src_dir):
+        fab.puts("Downloading setuptools for python {0}".format(version))
         download_url = SETUPTOOLS_DOWNLOAD_URL.format(py_version=version)
-        run("wget -q '{0}' -O - | tar xz".format(download_url))
-        with cd('setuptools-*'):
-            puts("Installing setuptools for python {0}".format(version))
-            sudo("{0} setup.py install".format(python_bin))
-    sudo('rm -rf {0}'.format(src_dir))
+        fab.run("wget -q '{0}' -O - | tar xz".format(download_url))
+        with fab.cd('setuptools-*'):
+            fab.puts("Installing setuptools for python {0}".format(version))
+            fab.sudo("{0} setup.py install".format(python_bin))
+    fab.sudo('rm -rf {0}'.format(src_dir))
 
 
-@task
+@fab.task
 def uninstall_setuptools():
     """Uninstall setuptools"""
     py_version = get_config()['version']
@@ -94,19 +89,19 @@ def uninstall_setuptools():
 
     python_bin = _python_bin_path(py_version)
 
-    src_dir = run('mktemp -d')
-    with cd(src_dir):
-        puts("Downloading setuptools for python {0}".format(version))
+    src_dir = fab.run('mktemp -d')
+    with fab.cd(src_dir):
+        fab.puts("Downloading setuptools for python {0}".format(version))
         download_url = SETUPTOOLS_DOWNLOAD_URL.format(py_version=version)
-        run("wget -q '{0}' -O - | tar xz".format(download_url))
-        with cd('setuptools-*'):
-            puts("Uninstalling setuptools for python {0}".format(version))
-            sudo("{0} setup.py install --record setuptools_files.txt".format(python_bin))
-            sudo("cat setuptools_files.txt | xargs rm -rf")
-    sudo('rm -rf {0}'.format(src_dir))
+        fab.run("wget -q '{0}' -O - | tar xz".format(download_url))
+        with fab.cd('setuptools-*'):
+            fab.puts("Uninstalling setuptools for python {0}".format(version))
+            fab.sudo("{0} setup.py install --record setuptools_files.txt".format(python_bin))
+            fab.sudo("cat setuptools_files.txt | xargs rm -rf")
+    fab.sudo('rm -rf {0}'.format(src_dir))
 
 
-@task
+@fab.task
 def uninstall():
     """Uninstall python"""
     version = get_config()['version']
@@ -115,28 +110,28 @@ def uninstall():
     if version != 'all':
         install_dir = os.path.join(install_dir, version)
 
-    puts("Removing {0}".format(install_dir))
-    if confirm("Are you sure?", default=False):
-        sudo("rm -rf '{0}'".format(install_dir))
-        puts("Python {0} uninstalled".format(version))
+    fab.puts("Removing {0}".format(install_dir))
+    if fab.confirm("Are you sure?", default=False):
+        fab.sudo("rm -rf '{0}'".format(install_dir))
+        fab.puts("Python {0} uninstalled".format(version))
 
 
-@task
+@fab.task
 def install_pip():
     """Install pip latest version."""
     py_version = get_config()['version']
 
-    puts("Installing pip for python {0}".format(py_version))
+    fab.puts("Installing pip for python {0}".format(py_version))
     easy_install_bin = _python_bin_path(py_version, 'easy_install')
 
-    if not file_exists(easy_install_bin):
-        puts("easy_install for version {0} not found".format(py_version))
+    if not cuisine.file_exists(easy_install_bin):
+        fab.puts("easy_install for version {0} not found".format(py_version))
         return
 
-    sudo('{0} pip'.format(easy_install_bin))
+    fab.sudo('{0} pip'.format(easy_install_bin))
 
 
-@task
+@fab.task
 def uninstall_pip():
     """Uninstall pip
 
@@ -146,53 +141,53 @@ def uninstall_pip():
     uninstall_pypi_package(py_version, 'pip')
 
 
-@task
+@fab.task
 def install_pypi_package(package):
     """Install pypi package `package` on python `py_version`."""
     py_version = get_config()['version']
 
-    puts("Installing pypi package {0} on python {1}".format(package, py_version))
+    fab.puts("Installing pypi package {0} on python {1}".format(package, py_version))
     pip_bin = _python_bin_path(py_version, 'pip')
 
-    if not file_exists(pip_bin):
-        puts("pip for version {0} not found".format(py_version))
+    if not cuisine.file_exists(pip_bin):
+        fab.puts("pip for version {0} not found".format(py_version))
         return
 
-    sudo('{cmd} install {package}'.format(cmd=pip_bin, package=package))
+    fab.sudo('{cmd} install {package}'.format(cmd=pip_bin, package=package))
 
 
-@task
+@fab.task
 def uninstall_pypi_package(package):
     """Uninstall pypi package `package` on python `py_version`."""
     py_version = get_config()['version']
 
-    puts("Uninstalling pypi package {0} on python {1}".format(package, py_version))
+    fab.puts("Uninstalling pypi package {0} on python {1}".format(package, py_version))
     pip_bin = _python_bin_path(py_version, 'pip')
 
-    if not file_exists(pip_bin):
-        puts("pip for version {0} not found".format(py_version))
+    if not cuisine.file_exists(pip_bin):
+        fab.puts("pip for version {0} not found".format(py_version))
         return
 
-    sudo('{cmd} uninstall {package}'.format(cmd=pip_bin, package=package))
+    fab.sudo('{cmd} uninstall {package}'.format(cmd=pip_bin, package=package))
 
 
-@task
+@fab.task
 def create_virtualenv():
-    """Cria a virtualenv para um site, :site"""
-    site = fabric.api.env.fabix['_current_project']
+    """Create virtualenv for project."""
+    site = get_project_name()
     version = get_config()['version']
 
-    venv_bin = _python_bin_path(version, 'virtualenv')
-    if cuisine.file_exists(venv_bin):
-        puts("virtualenv for {0} already exists".format(site))
+    virtualenv_dir = "{}/{}/virtualenv".format(SITES_DIR, site)
+    if cuisine.dir_exists(virtualenv_dir):
+        fab.puts("virtualenv for {0} already exists".format(site))
         return
 
     with cuisine.mode_sudo():
-        cuisine.dir_ensure('{}/{}/virtualenv'.format(SITES_DIR, site), recursive=True)
+        cuisine.dir_ensure(virtualenv_dir, recursive=True)
 
-    sudo("{venv_bin} {sites_dir}/{site}/virtualenv".format(venv_bin=venv_bin,
-        sites_dir=SITES_DIR,
-        site=site))
+    venv_bin = _python_bin_path(version, 'virtualenv')
+    fab.sudo("{venv_bin} {virtualenv_dir}".format(venv_bin=venv_bin,
+             virtualenv_dir=virtualenv_dir))
 
 
 def _get_virtualenv_bin(site, binary):
@@ -201,21 +196,20 @@ def _get_virtualenv_bin(site, binary):
     return os.path.join(bin_dir, binary)
 
 
-@task
+@fab.task
 def install_requirements(upgrade=False):
     """Install `site` project's requirements"""
-    site = fabric.api.env.fabix['_current_project']
+    site = get_project_name()
     project_dir = get_proj_config()['project_dir']
 
     pip = _get_virtualenv_bin(site, 'pip')
     requirements = open("{}/requirements.txt".format(project_dir)).read().replace("\n", " ")
-    sudo("{pip} install {upgrade} {requirements}".format(
-            pip=pip,
-            upgrade="--upgrade" if upgrade else "",
-            requirements=requirements))
+    fab.sudo("{pip} install {upgrade} {requirements}".format(
+             pip=pip, upgrade="--upgrade" if upgrade else "",
+             requirements=requirements))
 
 
-@task
+@fab.task
 def setup():
     """Install python, setuptools, pip and virtualenv."""
     install()

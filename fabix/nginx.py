@@ -2,12 +2,8 @@
 import os
 from functools import partial
 
-from cuisine import (dir_ensure, file_exists, file_local_read, file_upload,
-    file_write, mode_sudo, text_template, user_ensure, package_install)
-from fabric.api import cd, run, sudo, env
-from fabric.contrib.console import confirm
-from fabric.decorators import task
-from fabric.utils import abort, puts
+import cuisine
+import fabric.api as fab
 
 from fabix import get_config
 
@@ -20,47 +16,47 @@ ETC_DIR = os.path.join(os.path.dirname(__file__), 'support_files', 'etc')
 get_config = partial(get_config, 'nginx')
 
 
-@task
+@fab.task
 def install(force=False):
     """Install nginx HTTP server."""
     version = get_config()['version']
 
-    package_install(['build-essential', 'libpcre3-dev', 'zlib1g-dev'])
+    cuisine.package_install(['build-essential', 'libpcre3-dev', 'zlib1g-dev'])
 
     install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
     nginx_bin = os.path.join(install_dir, 'sbin', 'nginx')
-    if file_exists(nginx_bin):
+    if cuisine.file_exists(nginx_bin):
         if not force:
-            puts("Nginx {0} found, skipping installation".format(version))
+            fab.puts("Nginx {0} found, skipping installation".format(version))
             return
         else:
-            puts("Reinstalling nginx {0} found".format(version))
+            fab.puts("Reinstalling nginx {0} found".format(version))
 
-    with mode_sudo():
-        dir_ensure(install_dir, True)
+    with cuisine.mode_sudo():
+        cuisine.dir_ensure(install_dir, True)
 
     home_dir = os.path.join(install_dir, 'html')
-    user_ensure(NGINX_USER, None, home_dir, shell='/sbin/nologin')
-    sudo('passwd -l nginx')
+    cuisine.user_ensure(NGINX_USER, None, home_dir, shell='/sbin/nologin')
+    fab.sudo('passwd -l nginx')
 
     download_url = _DOWNLOAD_URL.format(version=version)
 
-    src_dir = run('mktemp -d')
-    with cd(src_dir):
-        puts("Downloading nginx {0}".format(version))
-        run("wget -q '{0}' -O - | tar xz".format(download_url))
-        with cd('nginx-{0}'.format(version)):
-            puts("Compiling nginx {0}".format(version))
-            run("./configure --prefix={0} --with-http_stub_status_module".format(install_dir))
-            run("make")
-            puts("Installing nginx {0}".format(version))
-            sudo('make install')
-            with mode_sudo():
-                dir_ensure("{0}{1}".format(install_dir, '/conf/sites-enabled'))
-    run("rm -rf '{0}'".format(src_dir))
+    src_dir = fab.run('mktemp -d')
+    with fab.cd(src_dir):
+        fab.puts("Downloading nginx {0}".format(version))
+        fab.run("wget -q '{0}' -O - | tar xz".format(download_url))
+        with fab.cd('nginx-{0}'.format(version)):
+            fab.puts("Compiling nginx {0}".format(version))
+            fab.run("./configure --prefix={0} --with-http_stub_status_module".format(install_dir))
+            fab.run("make")
+            fab.puts("Installing nginx {0}".format(version))
+            fab.sudo('make install')
+            with cuisine.mode_sudo():
+                cuisine.dir_ensure("{0}{1}".format(install_dir, '/conf/sites-enabled'))
+    fab.run("rm -rf '{0}'".format(src_dir))
 
 
-@task
+@fab.task
 def uninstall():
     """Uninstall nginx HTTP server"""
     version = get_config()['version']
@@ -69,13 +65,13 @@ def uninstall():
     if version != 'all':
         install_dir = os.path.join(install_dir, version)
 
-    puts("Removing {0}".format(install_dir))
-    if confirm("Are you sure?", default=False):
-        sudo("rm -rf '{0}'".format(install_dir))
-        puts("Nginx {0} uninstalled".format(version))
+    fab.puts("Removing {0}".format(install_dir))
+    if fab.confirm("Are you sure?", default=False):
+        fab.sudo("rm -rf '{0}'".format(install_dir))
+        fab.puts("Nginx {0} uninstalled".format(version))
 
 
-@task
+@fab.task
 def install_upstart():
     """Install nginx upstart config."""
     version = get_config()['version']
@@ -90,14 +86,14 @@ def install_upstart():
     }
 
     nginx_tpl = os.path.join(ETC_DIR, 'init', 'nginx.conf')
-    tpl_content = file_local_read(nginx_tpl)
-    content = text_template(tpl_content, context)
+    tpl_content = cuisine.file_local_read(nginx_tpl)
+    content = cuisine.text_template(tpl_content, context)
 
-    with mode_sudo():
-        file_write('/etc/init/nginx.conf', content)
+    with cuisine.mode_sudo():
+        cuisine.file_write('/etc/init/nginx.conf', content)
 
 
-@task
+@fab.task
 def put_conf(nginx_file):
     """Install global nginx config."""
     version = get_config()['version']
@@ -106,7 +102,7 @@ def put_conf(nginx_file):
     conf_file = os.path.join(install_dir, 'conf', 'nginx.conf')
 
     if not os.path.exists(nginx_file):
-        abort("Nginx conf {0} not found".format(nginx_file))
+        fab.abort("Nginx conf {0} not found".format(nginx_file))
 
     nginx_pid = os.path.join(install_dir, 'logs', 'nginx.pid')
 
@@ -116,19 +112,19 @@ def put_conf(nginx_file):
     }
 
     tpl_content = open(nginx_file, 'rb').read()
-    content = text_template(tpl_content, context)
+    content = cuisine.text_template(tpl_content, context)
 
-    with mode_sudo():
-        file_write(conf_file, content)
+    with cuisine.mode_sudo():
+        cuisine.file_write(conf_file, content)
 
 
-@task
+@fab.task
 def put_site_conf(nginx_file, context=None):
     """Install nginx config per site."""
     version = get_config()['version']
 
     if not os.path.exists(nginx_file):
-        abort("Nginx conf {0} not found".format(nginx_file))
+        fab.abort("Nginx conf {0} not found".format(nginx_file))
 
     site_name = os.path.basename(nginx_file)
 
@@ -137,16 +133,16 @@ def put_site_conf(nginx_file, context=None):
 
     if context:
         tpl_content = open(nginx_file, 'rb').read()
-        content = text_template(tpl_content, context)
+        content = cuisine.text_template(tpl_content, context)
 
-        with mode_sudo():
-            file_write(conf_file, content)
+        with cuisine.mode_sudo():
+            cuisine.file_write(conf_file, content)
     else:
-        with mode_sudo():
-            file_upload(conf_file, nginx_file)
+        with cuisine.mode_sudo():
+            cuisine.file_upload(conf_file, nginx_file)
 
 
-@task
+@fab.task
 def setup(nginx_file, nginx_site_conf):
     """Installs and configures nginx"""
     install()
