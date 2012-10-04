@@ -132,22 +132,17 @@ def install_pip():
 
 
 @fab.task
-def uninstall_pip():
-    """Uninstall pip
-
-    This task is just a alias to uninstall_pypi_package.
-    """
-    py_version = get_config()['version']
-    uninstall_pypi_package(py_version, 'pip')
-
-
-@fab.task
-def install_pypi_package(package):
+def install_pypi_package(package, use_virtualenv=True):
     """Install pypi package `package` on python `py_version`."""
     py_version = get_config()['version']
 
     fab.puts("Installing pypi package {0} on python {1}".format(package, py_version))
-    pip_bin = _python_bin_path(py_version, 'pip')
+
+    if use_virtualenv:
+        site = get_project_name()
+        pip_bin = _get_virtualenv_bin(site, 'pip')
+    else:
+        pip_bin = _python_bin_path(py_version, 'pip')
 
     if not cuisine.file_exists(pip_bin):
         fab.puts("pip for version {0} not found".format(py_version))
@@ -157,18 +152,23 @@ def install_pypi_package(package):
 
 
 @fab.task
-def uninstall_pypi_package(package):
+def uninstall_pypi_package(package, use_virtualenv=True):
     """Uninstall pypi package `package` on python `py_version`."""
     py_version = get_config()['version']
 
     fab.puts("Uninstalling pypi package {0} on python {1}".format(package, py_version))
-    pip_bin = _python_bin_path(py_version, 'pip')
+
+    if use_virtualenv:
+        site = get_project_name()
+        pip_bin = _get_virtualenv_bin(site, 'pip')
+    else:
+        pip_bin = _python_bin_path(py_version, 'pip')
 
     if not cuisine.file_exists(pip_bin):
         fab.puts("pip for version {0} not found".format(py_version))
         return
 
-    fab.sudo('{cmd} uninstall {package}'.format(cmd=pip_bin, package=package))
+    fab.sudo('{cmd} uninstall --yes {package}'.format(cmd=pip_bin, package=package))
 
 
 @fab.task
