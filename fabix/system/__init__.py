@@ -1,34 +1,32 @@
-import os
+# coding: utf-8
 import time
 
-from fabric.api import env
-from fabric.context_managers import settings
-from fabric.decorators import task
-from fabric.operations import open_shell, put, sudo
-from fabric.utils import puts
+import fabric.api as fab
+
+from fabix.system import upstart
 
 
-@task
+@fab.task
 def ssh():
-    puts("Opening shell to host {0}".format(env.host_string))
-    open_shell()
+    fab.puts("Opening shell to host {0}".format(fab.env.host_string))
+    fab.open_shell()
 
 
-@task
+@fab.task
 def apt_import_pubkey(key, keyserver='keyserver.ubuntu.com'):
-    puts("Importing pubkey {0}".format(key))
-    sudo('apt-key adv --keyserver {0} --recv {1}'.format(keyserver, key))
+    fab.puts("Importing pubkey {0}".format(key))
+    fab.sudo('apt-key adv --keyserver {0} --recv {1}'.format(keyserver, key))
 
 
-@task
+@fab.task
 def apt_add_repository(name, distro, url):
-    puts("Add repository {0}".format(name))
-    sudo("echo 'deb {0} {1} {2}' | sudo tee /etc/apt/sources.list.d/{2}.list".format(url, distro, name))
+    fab.puts("Add repository {0}".format(name))
+    fab.sudo("echo 'deb {0} {1} {2}' | sudo tee /etc/apt/sources.list.d/{2}.list".format(url, distro, name))
 
 
-@task
+@fab.task
 def reboot():
-    puts("Rebooting machine in 5 seconds!")
+    fab.puts("Rebooting machine in 5 seconds!")
     # just some time so user can press Ctrl+C
     time.sleep(5)
-    sudo('reboot')
+    fab.sudo('reboot')

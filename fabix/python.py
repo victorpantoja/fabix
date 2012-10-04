@@ -1,6 +1,7 @@
 import os
 from functools import partial
 
+import cuisine
 from cuisine import file_exists, package_install
 import fabric
 from fabric.api import cd, run, sudo
@@ -8,7 +9,7 @@ from fabric.contrib.console import confirm
 from fabric.decorators import task
 from fabric.utils import puts
 
-from fabix import get_config
+from fabix import get_config, get_project_name
 
 _INSTALL_DIR = '/opt'
 PYTHON_DOWNLOAD_URL = 'http://www.python.org/ftp/python/{version}/Python-{version}.tgz'
@@ -16,6 +17,7 @@ SETUPTOOLS_DOWNLOAD_URL = 'http://pypi.python.org/packages/source/s/setuptools/s
 SITES_DIR = '/data/sites/'
 
 
+get_proj_config = get_config
 get_config = partial(get_config, 'python')
 
 
@@ -23,8 +25,6 @@ get_config = partial(get_config, 'python')
 def install(force=False):
     """Install python"""
     version = get_config()['version']
-
-    package_install(['build-essential', 'libcurl4-openssl-dev'])
 
     install_dir = os.path.join(_INSTALL_DIR, 'python', version)
     python_bin = os.path.join(install_dir, 'bin', 'python')
@@ -35,6 +35,8 @@ def install(force=False):
             return
         else:
             puts("Reinstalling Python {0} found".format(version))
+
+    package_install(['build-essential', 'libcurl4-openssl-dev'])
 
     src_dir = run('mktemp -d')
     with cd(src_dir):
@@ -54,9 +56,17 @@ def _python_bin_path(py_version, bin_name='python'):
 
 
 @task
-def install_setuptools():
+def install_setuptools(force=False):
     """Install setuptools"""
     py_version = get_config()['version']
+
+    easy_install_bin = _python_bin_path(py_version, 'easy_install')
+    if cuisine.file_exists(easy_install_bin):
+        if not force:
+            puts("easy_install for python {0} found, skipping installation".format(py_version))
+            return
+        else:
+            puts("Reinstalling easy_install for python {0}".format(py_version))
 
     major, minor = py_version.split('.')[0:2]
     version = "{0}.{1}".format(major, minor)
@@ -173,6 +183,13 @@ def create_virtualenv():
     version = get_config()['version']
 
     venv_bin = _python_bin_path(version, 'virtualenv')
+    if cuisine.file_exists(venv_bin):
+        puts("virtualenv for {0} already exists".format(site))
+        return
+
+    with cuisine.mode_sudo():
+        cuisine.dir_ensure('{}/{}/virtualenv'.format(SITES_DIR, site), recursive=True)
+
     sudo("{venv_bin} {sites_dir}/{site}/virtualenv".format(venv_bin=venv_bin,
         sites_dir=SITES_DIR,
         site=site))
@@ -188,9 +205,10 @@ def _get_virtualenv_bin(site, binary):
 def install_requirements(upgrade=False):
     """Install `site` project's requirements"""
     site = fabric.api.env.fabix['_current_project']
+    project_dir = get_proj_config()['project_dir']
 
     pip = _get_virtualenv_bin(site, 'pip')
-    requirements = open("requirements.txt").read().replace("\n", " ")
+    requirements = open("{}/requirements.txt".format(project_dir)).read().replace("\n", " ")
     sudo("{pip} install {upgrade} {requirements}".format(
             pip=pip,
             upgrade="--upgrade" if upgrade else "",

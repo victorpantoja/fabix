@@ -30,25 +30,16 @@ class env(object):
 
 
 @task
-def create_structure():
-    """Create directory structure for project `site_name`."""
-    site_name = fabric.api.env.fabix['_current_project']
-
-    install_dir = os.path.join(INSTALL_DIR, site_name)
-    dirs_to_create = (
-        os.path.join(install_dir, 'releases'),
-        os.path.join(install_dir, 'virtualenv'),
-    )
-
-    puts("Setup project structure at {0}".format(install_dir))
-    sudo('mkdir -p {0}'.format(' '.join(dirs_to_create)))
-
-
-@task
 def upload(tag='master'):
     """Upload project `site` files from tag or branch `master`."""
     site = fabric.api.env.fabix['_current_project']
     project_dir = get_config()['project_dir']
+
+    install_dir = os.path.join(INSTALL_DIR, site)
+    dirs_to_create = (
+        os.path.join(install_dir, 'releases'),
+    )
+    sudo('mkdir -p {0}'.format(' '.join(dirs_to_create)))
 
     puts("Upload project {0}".format(site))
 

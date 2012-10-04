@@ -44,7 +44,7 @@ def stop(name, **kwargs):
     must be passed to stop.
     """
     args = ' '.join(['{}={}'.format(k, v) for k, v in kwargs.iteritems()])
-    fab.sudo("start {name} {args}".format(name=name, args=args))
+    fab.sudo("stop {name} {args}".format(name=name, args=args))
 
 
 @fab.task
