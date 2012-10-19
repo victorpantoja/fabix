@@ -27,7 +27,7 @@ Contributing
 ------------
 
 Just do the usual thing: fork & send a pull request. Please, respect the coding
-style around you and try to respect _`PEP 8` guidelines.
+style around you and try to respect `PEP 8`_ guidelines.
 
 License
 -------
