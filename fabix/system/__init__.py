@@ -3,7 +3,7 @@ import time
 
 import fabric.api as fab
 
-from fabix.system import upstart
+from fabix.system import upstart, crontab
 
 
 @fab.task
