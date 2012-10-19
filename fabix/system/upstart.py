@@ -92,3 +92,11 @@ def restart(name, force_start=True, **kwargs):
         if status.failed:
             cmd = 'start'
     fab.sudo("{cmd} {name} {args}".format(cmd=cmd, name=name, args=args))
+
+
+@fab.task
+def disable(name):
+    """
+    Disable specified upstart job
+    """
+    fab.sudo("echo 'manual' | tee /etc/init/{}.override".format(name))
