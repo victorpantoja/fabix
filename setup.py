@@ -1,11 +1,17 @@
+import os
+
 from setuptools import setup, find_packages
 from fabix import __version__
+
+base_dir = os.path.dirname(__file__)
+readme_file = os.path.join(base_dir, 'README.rst')
+requirements_file = os.path.join(base_dir, 'requirements.txt')
 
 setup(
     name='fabix',
     version=__version__,
     description="Fabix is a serie of functions built on top of fabric and cuisine to easily deploy python web projects.",
-    long_description=open('README.rst', 'rb').read(),
+    long_description=open(readme_file, 'rb').read(),
     keywords=['fabric', 'cuisine', 'fabix'],
     author='Rodrigo Machado',
     author_email='rcmachado@gmail.com',
@@ -26,6 +32,6 @@ setup(
         'Topic :: System :: Systems Administration',
     ],
     packages=find_packages(),
-    install_requires=open("requirements.txt").read().split("\n"),
+    install_requires=open(requirements_file, "rb").read().split("\n"),
     package_dir={"fabix": "fabix"}
 )
