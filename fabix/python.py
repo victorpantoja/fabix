@@ -31,7 +31,7 @@ def install(force=False):
         else:
             fab.puts("Reinstalling Python {0} found".format(version))
 
-    fab.package_install(['build-essential', 'libcurl4-openssl-dev'])
+    cuisine.package_install(['build-essential', 'libcurl4-openssl-dev'])
 
     src_dir = fab.run('mktemp -d')
     with fab.cd(src_dir):
@@ -178,7 +178,7 @@ def create_virtualenv():
     version = get_config()['version']
 
     virtualenv_dir = "{}/{}/virtualenv".format(SITES_DIR, site)
-    if cuisine.dir_exists(virtualenv_dir):
+    if cuisine.dir_exists(virtualenv_dir + "/bin"):
         fab.puts("virtualenv for {0} already exists".format(site))
         return
 
@@ -215,4 +215,4 @@ def setup():
     install()
     install_setuptools()
     install_pip()
-    install_pypi_package('virtualenv')
+    install_pypi_package('virtualenv', False)
