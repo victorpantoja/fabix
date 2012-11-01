@@ -29,7 +29,7 @@ class env(object):
 def upload(tag='master'):
     """Upload project `site` files from tag or branch `master`."""
     local_temp_dir, archive, current = do_archive(tag)
-    do_upload(local_temp_dir, archive, current)
+    return do_upload(local_temp_dir, archive, current)
 
 
 def do_upload(local_temp_dir, archive, current):
