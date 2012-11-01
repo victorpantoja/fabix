@@ -1,4 +1,5 @@
 import os
+import hashlib
 
 import boto
 from boto.utils import compute_md5
@@ -6,10 +7,17 @@ from fabric.decorators import task
 from fabric.utils import puts
 
 
-def upload_file(bucket, key_name, file_path, remote_prefix=None, policy='public-read'):
+def upload_file(bucket, key_name, file_path, remote_prefix=None, policy='public-read', metadata=None):
+    if not metadata:
+        metadata = {}
+
     if remote_prefix:
         key_name = '{0}/{1}'.format(remote_prefix, key_name)
     key = bucket.new_key(key_name)
+
+    for k, v in metadata.iteritems():
+        key.set_metadata(k, v)
+
     fd = open(file_path)
     md5 = compute_md5(fd)
     fd.close()
@@ -25,8 +33,18 @@ def get_key_name(local_path, fullpath):
     return key_name.lstrip('/')
 
 
+def hash_file(filename):
+    h = hashlib.md5()
+    fd = open(filename, 'rb')
+    while True:
+        data = fd.read(8 * 1024)
+        h.update(data)
+    fd.close()
+    return h.hexdigest()
+
+
 @task
-def sync_dir_up(bucket_name, local_path, remote_prefix=None):
+def sync_dir_up(bucket_name, local_path, remote_prefix=None, metadata=None):
     puts("Sync directory {0} with bucket {1}".format(bucket_name, local_path))
     conn = boto.connect_s3()
     bucket = conn.get_bucket(bucket_name)
@@ -47,4 +65,4 @@ def sync_dir_up(bucket_name, local_path, remote_prefix=None):
                     continue
 
             puts("Upload file {0}".format(file_path))
-            upload_file(bucket, key_name, file_path, remote_prefix=remote_prefix)
+            upload_file(bucket, key_name, file_path, remote_prefix=remote_prefix, metadata=metadata)
