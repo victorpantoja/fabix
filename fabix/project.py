@@ -28,30 +28,16 @@ class env(object):
 @fab.task
 def upload(tag='master'):
     """Upload project `site` files from tag or branch `master`."""
+    local_temp_dir, archive, current = do_archive(tag)
+    do_upload(local_temp_dir, archive, current)
+
+
+def do_upload(local_temp_dir, archive, current):
     site = fab.env.fabix['_current_project']
-    project_dir = get_config()['project_dir']
-
-    install_dir = os.path.join(INSTALL_DIR, site)
-    dirs_to_create = (
-        os.path.join(install_dir, 'releases'),
-    )
-    fab.sudo('mkdir -p {0}'.format(' '.join(dirs_to_create)))
-
-    fab.puts("Upload project {0}".format(site))
-
-    today = datetime.now().strftime('%Y%m%d-%H%M%S')
-    commit_id = str(fab.local('git rev-parse {0}'.format(tag), True)).strip()
-    current = "%s-%s" % (today, commit_id[:8])
     release_dir = os.path.join(INSTALL_DIR, site, 'releases')
 
     with cuisine.mode_sudo():
         cuisine.dir_ensure(release_dir)
-
-    local_temp_dir = mkdtemp()
-    archive = os.path.join(local_temp_dir, '{0}.tar.gz'.format(site))
-
-    git_arch_cmd = "git archive --format=tar.gz -o {archive} {commit_id}:{project_dir}"
-    fab.local(git_arch_cmd.format(archive=archive, commit_id=commit_id, project_dir=project_dir))
 
     with fab.lcd(local_temp_dir):
         remote_temp_dir = fab.run('mktemp -d')
@@ -66,6 +52,31 @@ def upload(tag='master'):
     fab.local('rm -rf {0}'.format(local_temp_dir))
 
     return current
+
+
+def do_archive(tag='master'):
+    site = fab.env.fabix['_current_project']
+    project_dir = get_config()['project_dir']
+
+    install_dir = os.path.join(INSTALL_DIR, site)
+    dirs_to_create = (
+        os.path.join(install_dir, 'releases'),
+    )
+    fab.sudo('mkdir -p {0}'.format(' '.join(dirs_to_create)))
+
+    fab.puts("Upload project {0}".format(site))
+
+    today = datetime.now().strftime('%Y%m%d-%H%M%S')
+    commit_id = str(fab.local('git rev-parse {0}'.format(tag), True)).strip()
+    current = "%s-%s" % (today, commit_id[:8])
+
+    local_temp_dir = mkdtemp()
+    archive = os.path.join(local_temp_dir, '{0}.tar.gz'.format(site))
+
+    git_arch_cmd = "git archive --format=tar.gz -o {archive} {commit_id}:{project_dir}"
+    fab.local(git_arch_cmd.format(archive=archive, commit_id=commit_id, project_dir=project_dir))
+
+    return local_temp_dir, archive, current
 
 
 @fab.task
