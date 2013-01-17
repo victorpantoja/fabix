@@ -2,8 +2,7 @@ import os
 
 import boto
 from boto.utils import compute_md5
-from fabric.decorators import task
-from fabric.utils import puts
+from fabric.api import puts, task
 
 
 def upload_file(bucket, key_name, file_path, remote_prefix=None, policy='public-read', metadata=None):

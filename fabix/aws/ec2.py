@@ -6,9 +6,7 @@ from datetime import datetime
 import boto
 from boto.ec2.autoscale import (LaunchConfiguration, AutoScalingGroup,
     ScalingPolicy)
-from fabric.decorators import task
-from fabric.operations import puts
-from fabric.utils import abort
+from fabric.api import abort, puts, task
 
 
 @task
