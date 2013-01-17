@@ -1,7 +1,7 @@
 # coding: utf-8
 import fabric.api as fab
 
-VERSION = (0, 0, 4)
+VERSION = (0, 0, 5)
 
 __version__ = ".".join([str(v) for v in VERSION])
 
