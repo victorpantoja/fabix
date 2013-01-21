@@ -1,29 +1,36 @@
 # coding: utf-8
 import os
-from functools import partial
 
 import cuisine
 import fabric.api as fab
 
-from fabix import get_config
 
-_INSTALL_DIR = '/opt'
 _DOWNLOAD_URL = 'http://nginx.org/download/nginx-{version}.tar.gz'
-NGINX_USER = 'nginx'
 ETC_DIR = os.path.join(os.path.dirname(__file__), 'support_files', 'etc')
 
 
-get_config = partial(get_config, 'nginx')
+DEFAULT_CONFIG = {
+    'version': '1.3.7',
+    'install_dir': '/opt',
+    'user': 'nginx',
+}
 
 
-@fab.task
+def get_config():
+    custom_config = fab.env.fabix.get('python', {})
+    config = dict(DEFAULT_CONFIG)
+    config.update(custom_config)
+    return config
+
+
 def install(force=False):
     """Install nginx HTTP server."""
-    version = get_config()['version']
+    config = get_config()
+    version = config['version']
 
     cuisine.package_install(['build-essential', 'libpcre3-dev', 'zlib1g-dev'])
 
-    install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
+    install_dir = os.path.join(config['install_dir'], 'nginx', version)
     nginx_bin = os.path.join(install_dir, 'sbin', 'nginx')
     if cuisine.file_exists(nginx_bin):
         if not force:
@@ -36,7 +43,7 @@ def install(force=False):
         cuisine.dir_ensure(install_dir, True)
 
     home_dir = os.path.join(install_dir, 'html')
-    cuisine.user_ensure(NGINX_USER, None, home_dir, shell='/sbin/nologin')
+    cuisine.user_ensure(config['user'], None, home_dir, shell='/sbin/nologin')
     fab.sudo('passwd -l nginx')
 
     download_url = _DOWNLOAD_URL.format(version=version)
@@ -59,9 +66,10 @@ def install(force=False):
 @fab.task
 def uninstall():
     """Uninstall nginx HTTP server"""
-    version = get_config()['version']
+    config = get_config()
+    version = config['version']
 
-    install_dir = os.path.join(_INSTALL_DIR, 'nginx')
+    install_dir = os.path.join(config['install_dir'], 'nginx')
     if version != 'all':
         install_dir = os.path.join(install_dir, version)
 
@@ -74,9 +82,10 @@ def uninstall():
 @fab.task
 def install_upstart():
     """Install nginx upstart config."""
-    version = get_config()['version']
+    config = get_config()
+    version = config['version']
 
-    install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
+    install_dir = os.path.join(config['install_dir'], 'nginx', version)
     nginx_bin = os.path.join(install_dir, 'sbin', 'nginx')
     nginx_pid = os.path.join(install_dir, 'logs', 'nginx.pid')
 
@@ -96,9 +105,10 @@ def install_upstart():
 @fab.task
 def put_conf(nginx_file):
     """Install global nginx config."""
-    version = get_config()['version']
+    config = get_config()
+    version = config['version']
 
-    install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
+    install_dir = os.path.join(config['install_dir'], 'nginx', version)
     conf_file = os.path.join(install_dir, 'conf', 'nginx.conf')
 
     if not os.path.exists(nginx_file):
@@ -107,7 +117,7 @@ def put_conf(nginx_file):
     nginx_pid = os.path.join(install_dir, 'logs', 'nginx.pid')
 
     context = {
-        'nginx_user': NGINX_USER,
+        'nginx_user': config['user'],
         'nginx_pid': nginx_pid,
     }
 
@@ -121,14 +131,15 @@ def put_conf(nginx_file):
 @fab.task
 def put_site_conf(nginx_file, context=None):
     """Install nginx config per site."""
-    version = get_config()['version']
+    config = get_config()
+    version = config['version']
 
     if not os.path.exists(nginx_file):
         fab.abort("Nginx conf {0} not found".format(nginx_file))
 
     site_name = os.path.basename(nginx_file)
 
-    install_dir = os.path.join(_INSTALL_DIR, 'nginx', version)
+    install_dir = os.path.join(config['install_dir'], 'nginx', version)
     conf_file = os.path.join(install_dir, 'conf', 'sites-enabled', site_name)
 
     if context:

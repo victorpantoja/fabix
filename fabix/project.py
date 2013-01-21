@@ -25,6 +25,10 @@ class env(object):
             fab.env.fabix['_current_project'] = self._old_env_name
 
 
+def current_project():
+    return fab.env.fabix.get('_current_project')
+
+
 @fab.task
 def upload(tag='master'):
     """Upload project `site` files from tag or branch `master`."""

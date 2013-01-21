@@ -1,15 +1,25 @@
 # coding: utf-8
 import os
 
+import cuisine
 import fabric.api as fab
 
 
-def install(filename):
+def install(filename, name=None, tpl_context=None):
     """Install upstart script on remote host.
 
     filename will be uploaded to /etc/init on remote server."""
-    name = os.path.basename(filename)
-    fab.put(filename, '/etc/init/{0}'.format(name), use_sudo=True)
+    if name is None:
+        name = os.path.basename(filename)
+
+    content = open(filename, 'r').read()
+
+    if tpl_context:
+        content = cuisine.text_template(content, tpl_context)
+
+    remote_file = '/etc/init/{name}'.format(name=name)
+    with cuisine.mode_sudo():
+        cuisine.file_write(remote_file, content)
 
 
 @fab.task
