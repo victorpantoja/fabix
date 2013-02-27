@@ -16,6 +16,7 @@ Requirements
 
  * Fabric_ 1.4.2
  * cuisine_ 0.2.6
+ * Boto_ 2.7.0
 
 Roadmap
 -------
@@ -36,5 +37,6 @@ This project is licensed under MIT license. For details, please see file MIT-LIC
 
 
 .. _Fabric: http://docs.fabfile.org/en/1.4.2/index.html
+.. _Boto: https://github.com/boto/boto
 .. _cuisine: https://github.com/sebastien/cuisine
 .. _`PEP 8`: http://www.python.org/dev/peps/pep-0008/
